@@ -333,6 +333,20 @@ impl WorkerState {
 
         let mut builder = OverrideBuilder::new(first_path);
 
+        let projectignore_path = first_path.join(".projectignore");
+        if projectignore_path.is_file() {
+            let content = std::fs::read_to_string(projectignore_path)
+                .map_err(|e| anyhow!("Could not read .projectignore file: {}", e))?;
+            for line in content.lines() {
+                let trimmed_line = line.trim();
+                if !trimmed_line.is_empty() && !trimmed_line.starts_with("#") {
+                    builder
+                        .add(format!("!{}", trimmed_line).as_str())
+                        .map_err(|e| anyhow!("Malformed .projectignore pattern: {}", e))?;
+                }
+            }
+        }
+
         for pattern in &config.exclude_patterns {
             builder
                 .add(pattern)
